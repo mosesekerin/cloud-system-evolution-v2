@@ -1,13 +1,30 @@
 #!/bin/bash
 
 # =============================================================================
-# v0.1 NAIVE CONFIGURATION SCRIPT — INTENTIONALLY FRAGILE
+# v0.2 CONTROLLED FAILURE BASELINE — DETERMINISTIC EXECUTION
 # =============================================================================
-# This script is deliberately unsophisticated. It assumes a pristine machine,
-# a stable internet connection, sufficient disk space, and that it will never
-# be run more than once. No error checking. No idempotency. No safety nets.
-# This is a "run it and pray" script. You have been warned.
+# Upgraded from v0.1 to enforce fail-fast behavior and structured logging.
+#
+# What changed:
+#   - Introduced set -euo pipefail for deterministic failure semantics.
+#   - Added safe IFS handling.
+#   - Added structured log() and error() functions with timestamps.
+#   - Added ERR trap that reports the exact failing line number.
+#   - Added timestamped log output before each major step.
+#
+# What did NOT change:
+#   - Still NOT idempotent. Re-running this script will break things.
+#   - Still NOT concurrency-safe. No locking. No mutex. No guards.
+#   - Still assumes correctness of environment state.
+#   - Still assumes a pristine machine, live network, and sufficient disk.
+#   - Still does not validate, reconcile, or correct existing state.
+#   - Provisioning logic, step ordering, and commands are unchanged.
+#
+# This version only enforces: if anything fails, stop immediately and say why.
 # =============================================================================
+
+set -euo pipefail
+IFS=$'\n\t'
 
 APP_NAME="notesapp"
 APP_USER="notesapp"
