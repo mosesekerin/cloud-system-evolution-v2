@@ -1,4 +1,3 @@
-```bash
 #!/bin/bash
 
 # =============================================================================
@@ -35,32 +34,31 @@ sudo dnf install -y git nodejs
 sudo useradd --system --create-home --shell /sbin/nologin $APP_USER
 
 # -----------------------------------------------------------------------------
-# Step 4: Create the application directory.
+# Step 4: Determine the application directory.
 # Does not check if it exists. Assumes it doesn't. Assumes we have write access.
 # -----------------------------------------------------------------------------
-sudo mkdir -p $APP_DIR
-sudo chown $APP_USER:$APP_USER $APP_DIR
+sudo chown $APP_USER:$APP_USER $APP_DIR/app
 
 # -----------------------------------------------------------------------------
 # Step 5: Clone the GitHub repository into the app directory.
 # Assumes the repo is public. Assumes git is installed. Assumes it will work.
 # -----------------------------------------------------------------------------
 sudo git clone $GITHUB_REPO $APP_DIR
-sudo chown -R $APP_USER:$APP_USER $APP_DIR
+sudo chown -R $APP_USER:$APP_USER $APP_DIR/app
 
 # -----------------------------------------------------------------------------
 # Step 6: Run npm install as the service user.
 # Always. Unconditionally. Whether or not node_modules already exists.
 # -----------------------------------------------------------------------------
-cd $APP_DIR
+cd $APP_DIR/app
 sudo -u $APP_USER npm install --omit=dev
 
 # -----------------------------------------------------------------------------
 # Step 7: Prepare the JSON file used as a database and the log file.
 # Blindly touches and chowns both. Does not check if they already exist.
 # -----------------------------------------------------------------------------
-sudo touch /opt/notesapp/notes.json
-sudo chown $APP_USER:$APP_USER /opt/notesapp/notes.json
+sudo touch /opt/notesapp/app/notes.json
+sudo chown $APP_USER:$APP_USER /opt/notesapp/app/notes.json
 
 sudo touch /var/log/notesapp.log
 sudo chown $APP_USER:$APP_USER /var/log/notesapp.log
@@ -76,8 +74,8 @@ Description=Notes App (Express.js)
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/node /opt/notesapp/server.js
-WorkingDirectory=$APP_DIR
+ExecStart=/usr/bin/node /opt/notesapp/app/server.js
+WorkingDirectory=$APP_DIR/app
 Restart=always
 RestartSec=5
 User=$APP_USER
@@ -115,4 +113,4 @@ sudo systemctl enable $APP_NAME
 # =============================================================================
 # Done. Presumably. The app is either running or it isn't. Good luck.
 # =============================================================================
-```
+
