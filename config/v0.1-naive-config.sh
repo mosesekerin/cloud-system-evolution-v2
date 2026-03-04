@@ -67,11 +67,12 @@ log "Step 3: Creating system user '${APP_USER}'."
 sudo useradd --system --create-home --shell /sbin/nologin $APP_USER
 
 # -----------------------------------------------------------------------------
-# Step 4: Determine the application directory.
+# Step 4: Create the application directory.
 # Does not check if it exists. Assumes it doesn't. Assumes we have write access.
 # -----------------------------------------------------------------------------
-log "Step 4: Setting ownership of application directory."
-sudo chown $APP_USER:$APP_USER $APP_DIR/app
+log "Step 4: Creating application directory."
+sudo mkdir -p $APP_DIR
+sudo chown $APP_USER:$APP_USER $APP_DIR
 
 # -----------------------------------------------------------------------------
 # Step 5: Clone the GitHub repository into the app directory.
