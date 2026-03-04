@@ -33,33 +33,51 @@ GITHUB_REPO="https://github.com/mosesekerin/cloud-system-evolution-v2.git"
 NODE_ENV="production"
 
 # -----------------------------------------------------------------------------
+# Logging and error handling.
+# -----------------------------------------------------------------------------
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO]  $*"
+}
+
+error() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR] $*" >&2
+}
+
+trap 'error "Script failed at line ${LINENO}. Exiting."' ERR
+
+# -----------------------------------------------------------------------------
 # Step 1: Update system packages.
 # Blindly trusts dnf is available, network is up, and mirrors are reachable.
 # -----------------------------------------------------------------------------
+log "Step 1: Updating system packages."
 sudo dnf update -y
 
 # -----------------------------------------------------------------------------
 # Step 2: Install Node.js and git via dnf.
 # No version pinning. Whatever ships with the OS is good enough. Probably.
 # -----------------------------------------------------------------------------
+log "Step 2: Installing git and nodejs."
 sudo dnf install -y git nodejs
 
 # -----------------------------------------------------------------------------
 # Step 3: Create a system user for the app.
 # Does not check if the user already exists. Will explode on re-run.
 # -----------------------------------------------------------------------------
+log "Step 3: Creating system user '${APP_USER}'."
 sudo useradd --system --create-home --shell /sbin/nologin $APP_USER
 
 # -----------------------------------------------------------------------------
 # Step 4: Determine the application directory.
 # Does not check if it exists. Assumes it doesn't. Assumes we have write access.
 # -----------------------------------------------------------------------------
+log "Step 4: Setting ownership of application directory."
 sudo chown $APP_USER:$APP_USER $APP_DIR/app
 
 # -----------------------------------------------------------------------------
 # Step 5: Clone the GitHub repository into the app directory.
 # Assumes the repo is public. Assumes git is installed. Assumes it will work.
 # -----------------------------------------------------------------------------
+log "Step 5: Cloning repository from ${GITHUB_REPO}."
 sudo git clone $GITHUB_REPO $APP_DIR
 sudo chown -R $APP_USER:$APP_USER $APP_DIR/app
 
@@ -67,6 +85,7 @@ sudo chown -R $APP_USER:$APP_USER $APP_DIR/app
 # Step 6: Run npm install as the service user.
 # Always. Unconditionally. Whether or not node_modules already exists.
 # -----------------------------------------------------------------------------
+log "Step 6: Running npm install as '${APP_USER}'."
 cd $APP_DIR/app
 sudo -u $APP_USER npm install --omit=dev
 
@@ -74,6 +93,7 @@ sudo -u $APP_USER npm install --omit=dev
 # Step 7: Prepare the JSON file used as a database and the log file.
 # Blindly touches and chowns both. Does not check if they already exist.
 # -----------------------------------------------------------------------------
+log "Step 7: Preparing notes.json and log file."
 sudo touch /opt/notesapp/app/notes.json
 sudo chown $APP_USER:$APP_USER /opt/notesapp/app/notes.json
 
@@ -85,6 +105,7 @@ sudo chown $APP_USER:$APP_USER /var/log/notesapp.log
 # Overwrites any existing file without asking. No validation of the unit syntax.
 # Hardcodes everything.
 # -----------------------------------------------------------------------------
+log "Step 8: Writing systemd unit file to /etc/systemd/system/${APP_NAME}.service."
 sudo tee /etc/systemd/system/$APP_NAME.service > /dev/null <<EOF
 [Unit]
 Description=Notes App (Express.js)
@@ -115,6 +136,7 @@ EOF
 # Step 9: Reload systemd.
 # Trusts that systemd is the init system. Assumes the unit file is valid.
 # -----------------------------------------------------------------------------
+log "Step 9: Reloading systemd."
 sudo systemctl daemon-reexec
 sudo systemctl daemon-reload
 
@@ -124,10 +146,12 @@ sudo systemctl daemon-reload
 # Does not verify the app is actually listening on the expected port.
 # Ships it and calls it a day.
 # -----------------------------------------------------------------------------
+log "Step 10: Enabling and starting '${APP_NAME}' service."
 sudo systemctl start $APP_NAME
 sudo systemctl enable $APP_NAME
+
+log "Provisioning complete. The app is either running or it isn't. Good luck."
 
 # =============================================================================
 # Done. Presumably. The app is either running or it isn't. Good luck.
 # =============================================================================
-
